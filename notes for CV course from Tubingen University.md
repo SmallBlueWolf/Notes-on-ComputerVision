@@ -337,6 +337,181 @@
 
 ### 2.1 Primitives and Tranformations
 
+- Primitives
+	- points, lines, planes
+- Transformations
+	- some the most basic transformations
+- Multiple View Geometry in CV
+
+#### 2.1.1 Primitives
+
+##### 2D points
+
+> 齐次坐标和非齐次坐标的理解小结
+> [[Inhomogeneous vs homogeneous coordinates]]
+
+- 2d points
+	- 非齐次坐标（Inhomogeneous coordinates）
+		- $x=(^{x}_{y})\in R^{2}$
+	- 齐次坐标（homogeneous coordinates）
+		- $\tilde{x}=\begin{pmatrix}\tilde{x}\\\tilde{y}\\\tilde{w}\end{pmatrix}\in P^{2}$
+			- 这里的 $p^{2}=R^{3}/\{(0,0,0)\}$，称为射影空间
+			- 引入一个新的维度 $\tilde{w}$，使得某些几何变换可以用矩阵乘法简洁表达
+			- 
+	- 一个非齐次坐标可以用若干等价的齐次坐标表示，其中当 $\tilde{w}=1$ 时，我们将这时的齐次坐标记作对应的增广向量（augmented vector）$\overline{x}$
+		- $\tilde{x}=\begin{pmatrix}\tilde{x}\\\tilde{y}\\\tilde{w}\end{pmatrix}=\begin{pmatrix}x\\y\\1\end{pmatrix}=\begin{pmatrix}x\\1\end{pmatrix}=\overline{x}$
+	- $\tilde{w}=0$ 时，齐次坐标没有对应的非齐次坐标，此时的点称为理想点（ideal points）或者无穷点
+	- 齐次向量、非齐次向量、增广向量的映射关系（这里的 z 轴实际上是 $\tilde{w}$ 轴）
+		- ![[Pasted image 20240708175500.png|800]]
+			- 其实由图中可以理解，任何一个 $\tilde{w}$ 维度下的 x,y 平面中表示的点其实都可以相互映射，一一对应
+
+
+##### 2D lines
+
+- 2d lines 也可以用齐次坐标 $\tilde{l}=(a,b,c)^{T}$ 表示
+	- $\{\overline{x}|\tilde{l}^{T}\overline{x}=0\}\Leftrightarrow \{x,y|ax+by+c=0\}$
+		- 这里的 $\tilde{l}$ 向量可以标准化为 $\tilde{l}=(n_{x},n_{y},d)^{T}=(n,d)^{T}$，其中 $||n||_{2}=1$，此时 $n=(n_{x},n_{y})$ 向量是垂直于直线的法向量，d则是直线到原点的距离
+		- 对于 $\tilde{l}_{\infty}=(0,0,1)^{T}$，是无穷远处的线，它会穿过所有理想点，且不能被标准化
+
+- Cross product（叉乘）（外积）（向量积）
+	- $a\times b=[a]_{\times}b=\begin{bmatrix}0,-a_{3},a_{2}\\a_{3},0,-a_{1}\\-a_{2},a_{1},0\end{bmatrix}\begin{pmatrix}b_{1}\\b_{2}\\b_{3}\end{pmatrix}=\begin{pmatrix}a_{2}b_{3}-a_{3}b_{2}\\a_{3}b_{1}-a_{1}b_{3}\\a_{1}b_{2}-a_{2}b_{1}\end{pmatrix}$
+	- 叉乘得到一个新的向量，这个向量的方向垂直于原来两个向量的平面，遵循右手法则；长度等于原来两个向量的点乘（内积）（数量积）
+		- 注意
+			- 向量 $a$ 和 $b$ 的叉乘，等于 $[a]_{\times}$ 和 $b$ 的点乘，其中 $[a]_{\times}$ 是 $a$ 的一个特殊的斜对角矩阵形式，如上所示
+
+- 2d lines arithmetic
+	- 叉乘有什么用呢？在齐次坐标表示下
+		- 两条线的**交点**可以表示为：$\tilde{x}=\tilde{l}_{2}\times \tilde{l}_{2}$ \
+		- **经过两个点的线**(the line joining two points)可以表示为：$\tilde{l}=\overline{x}_{1}\times\overline{x}_{2}$
+			- 当然，一般情况下我们使用 augmented vector 表示，也可以用所有等价的齐次坐标表示
+		- ![[Pasted image 20240708184757.png|400]]
+			- 根据前面所述，2d lines 可以表示为一个 3 维向量 $\tilde{l}$ 与 augmented vector 点乘的形式，因此 $y=1$ 和 $x=2$ 两条直线都可以拆分成这样的形式，其中 $\tilde{l}_{1}$ 和 $\tilde{l}_{2}$ 的叉乘结果如下
+				- $\tilde{l}_{1}\times \tilde{l}_{2}=\begin{pmatrix}(1\times -2)-(-1\times0)\\(-1\times 1)-(0\times -2)\\(0\times 0)-(1\times 1)\end{pmatrix}=\begin{pmatrix}-2\\-1\\-1\end{pmatrix}=\begin{pmatrix}2\\1\\1\end{pmatrix}$
+			- 因此，得到了图中交点的齐次坐标
+		- ![[Pasted image 20240708185657.png|400]]
+			- 同理，我们也可以证明第二个等式
+				- 图中 $\tilde{l}_{1}$ 和 $\tilde{l}_{2}$ 的叉乘结果为 $\tilde{l}_{1}\times \tilde{l}_{2}=\begin{pmatrix}0\\-1\\0\end{pmatrix}$
+			- 因此，两条平行线确实在无穷远处的点上相交
+
+##### 2D conics
+
+- 实际上，2 维空间的一切几何对象都是基于点来描述的，线、面，其实是由一组具有特殊关系的点组成的集合；因此，我们只需要描述这种特殊关系，就可以描述任意类型的几何对象
+
+- 更复杂的几何对象可以用多项式齐次方程来表示，例如圆锥截面可以用下面的二次齐次方程表示
+	- $\{\overline{x}|\overline{x}^{T} Q \overline{x}=0\}$
+		- ![[Pasted image 20240708190410.png|500]]
+			- （圆、椭圆、抛物线、双曲线）
+	- 我们只需要调整Q 矩阵就可以得到各种类型的圆锥截面
+- 复杂的 2 维几何对象的齐次表示并不是本课程的重点，但却是多视角几何和相机校准的关键技术，如果感兴趣可以阅览教授的《Hartley and Zisserman》
+
+##### 3D points
+
+- 3d points
+	- 非齐次形式
+		- $x=\begin{pmatrix}x\\y\\z\end{pmatrix}\in R^{3}$
+	- 齐次形式
+		- $\tilde{x}=\begin{pmatrix}\tilde{x}\\\tilde{y}\\\tilde{z}\\\tilde{w}\end{pmatrix}\in P^{3}$
+			- 其中 $P^{3}=R^{4}/\{(0,0,0,0)\}$
+	- 非齐次与齐次的转换与 2d 的情况一致
+
+##### 3D planes
+
+- 3d planes
+	- $\tilde{m}=(a,b,c,d)^{T}$
+		- $\{\overline{x}|\tilde{m}^{T}\overline{x}=0\}\Leftrightarrow\{x,y,z|ax+by+cz+d=0\}$
+	- 同样的，我们也可以将 $\tilde{m}$ 标准化，也即 $\tilde{m}=(n_{x},n_{y},n_{z},d)^{T}=(n,d)^{T}$，其中 $||n||_{2}=1$；此时向量 n 就是平面的法平面向量，d 就是该平面与原点的距离
+	- 对于 $\tilde{m}_{\infty}=(0,0,0,1)^{T}$，就是无穷远处的平面，它经过所有的理想点，且不能被标准化
+
+##### 3D lines
+
+- 3d lines 不如 2d lines 或者 3d planes 一样优雅，一种可能的表达方式维直线上两个点 p、q 的线性组合：
+	- $\{x|x=(1-\lambda)\vec{p}+\lambda \vec{q}\cap \lambda\in R\}$
+- 然而，这种表示方式用 6 个参数来表示 4 个自由度，并不是一种理想的表示方法
+- 可选的一种最小表示方法是将两个平面参数化，或者 Plücker 坐标
+	- 详见第二章 2.1
+
+##### 3D quadrics
+
+- 2d 的 conics 的 3d 模拟就是
+	- $\{\overline{x}|\overline{x}^{T}Q\overline{x}=0\}$
+		- ![[Pasted image 20240708205135.png|700]]
+	- 同样的，在这里也不展开叙述
+
+#### Transformations
+
+##### 2d transformations
+
+- ![[Pasted image 20240708205658.png|700]]
+	- **Translation**（2DoF）
+		- $x'=x+t \Leftrightarrow \overline{x}'=\begin{bmatrix}\vec{I},t\\\vec{0}^{T},1\end{bmatrix}\overline{x}$
+			- 使用齐次表示，允许链式、逆变换
+			- 增广向量 $\overline{x}$ 总是可以用一般的齐次向量 $\tilde{x}$ 代替
+	- **Euclidean**（2d Translation + 2d Rotation, 3DoF）
+		- $x'=Rx+t \Leftrightarrow \overline{x}'=\begin{bmatrix}\vec{R},t\\\vec{0}^{T},1\end{bmatrix}\overline{x}$
+			- $\vec{R}\in SO(2)$ 是一个标准正交旋转矩阵，其中 $RR^{T}=I$ 、$det(R)=1$
+			- Euclidean 保留了点之间的欧几里得距离
+			- Translation 是一种特殊的 Euclidean
+	- **Similarity**（2d translation + scaled 2d rotation, 4DoF）
+		-  $x'=sRx+t \Leftrightarrow \overline{x}'=\begin{bmatrix}s\vec{R},\vec{t}\\\vec{0}^{T},1\end{bmatrix}\overline{x}$ 
+			- $\vec{R}\in SO(2)$ 是一个旋转矩阵，$s$ 是一个任意缩放因子
+			- Similarity 只保留了线之间的夹角
+	- **Affine**（2d Linear transformation, 6DoF）
+		- $x'=Ax+t \Leftrightarrow \overline{x}'=\begin{bmatrix}\vec{A},\vec{t}\\\vec{0}^{T},1\end{bmatrix}\overline{x}$
+			- $\vec{A}\in R^{2\times2}$ 是一个任意的 $2\times2$ 矩阵
+			- Affine 只保留了平行线间的平行性
+	- **Perspective**（homography, 8DoF）
+		- $\tilde{x}'=\tilde{H}\tilde{x}\quad\quad(\overline{x}=\frac{1}{\tilde{w}}\tilde{x})$
+			- $\tilde{H}\in R^{3\times3}$ 是一个任意的齐次 $3\times3$ 矩阵
+			- Perspective 只保留了线段还是直的
+> DoF: Degrees of Freedom，自由度
+
+- 2d transformations on Co-vectors
+	- 考虑最一般的变换 perspective：
+		- $\tilde{x}'=\tilde{H}\tilde{x}$
+		- 那么 2d lines 的变换如下
+			- $\tilde{l}'\tilde{x}'=\tilde{l}'^{T}\tilde{H}\tilde{x}=(\tilde{H}^{T}\tilde{l}')^{T}\tilde{x}=\tilde{l}^{T}\tilde{x}=0$
+		- 因此，我们得到了
+			- $\tilde{l}'=\tilde{H}^{-T}\tilde{l}$
+	- 综上，我们可以看出，在类似于 2d line 或者 3d normal 的协向量的变换，其变换矩阵可以表示为点变换矩阵的转置逆的变换矩阵
+
+##### summary
+
+- Overview of 2d transformations
+	- ![[Pasted image 20240708214637.png|600]]
+	- 这些变换计算在组合、逆运算下是封闭的
+
+- Overview of 3d transformations
+	- ![[Pasted image 20240708214820.png|600]]
+
+- Direct Linear Transform for Homography Estimation（单应性估计）
+	- $\chi = \{\tilde{x}_{i},\tilde{x}_{i}'\}^{N}_{i=1}$ 定义一组 2d 点 to 2d 点 的关系，通过一个 Homography（单应性）矩阵 $\tilde{H}$ ，定义为 $\tilde{x}_{i}'=\tilde{H}\tilde{x}_{i}$
+	- 这些对应的向量是齐次的，它们的方向一致，但是大小不同
+	- 因此，上式也可以表示为 $\tilde{x}_{i}'\times \tilde{H}\tilde{x}_{i}=\vec{0}$
+	- 假如我们已经有了 $\tilde{x}$ 和 $\tilde{x}'$，如何估计这里的单应性矩阵 H 呢？
+		- 如果用 $\tilde{h}_{k}^{T}$ 表示 $\tilde{H}$ 矩阵的第 k 行，则上式可以重新书写为下式
+			- $$
+A_{i}\tilde{h}=\begin{bmatrix}&\vec{0}^{T} &-\tilde{w}_{i}'\tilde{X}_{i}^{T} &\tilde{y}_{y}'\tilde{X}_{i}^{T}\\&\tilde{w}_{i}'\tilde{X}_{i}^{T}&\vec{0}^{T}&-\tilde{x}_{i}'\tilde{X}_{i}^{T}\\&-\tilde{y}_{i}'\tilde{X}_{i}^{T}&\tilde{x}_{i}'\tilde{X}_{i}^{T}&\vec{0}^{T}\end{bmatrix}\begin{pmatrix}\tilde{h_{1}}\\\tilde{h_{2}}\\\tilde{h_{3}}\end{pmatrix}=0
+$$
+			- 现在我们得到了一个线性的系统，由已知值 $A_{i}$ ，欲求未知参数 $\tilde{h}$
+			- $A_{i}$ 矩阵的最后一行和前两行是线性相关的，因此我们可以将其删掉
+			- $A_{i}$ 矩阵是一个 2x3 的矩阵， $\tilde{h}$ 是一个 3x1 的向量，对应相乘
+			- 因此，每个点对点关系实际上得到的是 2 组约束关系
+	- 我们将 N 组关系全部堆叠在一起，得到一个 2Nx9 的矩阵 A，A 矩阵可以得到如下一个最小二乘约束系统
+		- $$
+\begin{aligned}
+\tilde{h}^{*}=&argmin_{\tilde{h}}{||A\tilde{h}||_{2}}^{2}+\lambda({||\tilde{h}||_{2}}^{2}-1)\\
+=&argmin_{\tilde{h}}\tilde{h}^{T}A^{T}A\tilde{h}+\lambda(\tilde{h}^{T}\tilde{h}-1)
+\end{aligned}
+$$
+			- 其中 $\lambda$ 是正则化参数
+			- 由于 $\tilde{h}$ 是齐次的，因此要有 ${||\tilde{h}||_{2}}^{2}=1$ 的约束
+		- 求解过程对应一个奇异值求解或特征值求解过程，$A=UDV^{T}$
+	- 这种算法称为 DLT(Direct Linear Transformation)
+		- DLT 的一个应用
+			- ![[Pasted image 20240708234129.png|400]]
+		- 我们对同一物体的两个不同视角各拍摄了一张图，现在我们想将其合成为一张全景图
+		- 我们可以找到两张图片中目前已知的对应点，记录它们的关系；然后求解它们的单应性矩阵 H，从而用单应性矩阵求解出变换后的所有未知的对应点
+
 ### 2.2 Geometric Image Formation
 
 ### 2.3 Photometric Image Formation
