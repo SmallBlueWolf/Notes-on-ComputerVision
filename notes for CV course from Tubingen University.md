@@ -1,5 +1,7 @@
 # 一、Introduction (Andreas Geiger)
 
+[[lec_01_introduction.pdf]]
+
 ### 1.1 Organization
 
 - what is CV？
@@ -335,6 +337,8 @@
 
 # 二、Image Formation
 
+[[lec_02_image_formation.pdf]]
+
 ### 2.1 Primitives and Tranformations
 
 - Primitives
@@ -437,7 +441,7 @@
 		- ![[Pasted image 20240708205135.png|700]]
 	- 同样的，在这里也不展开叙述
 
-#### Transformations
+#### 2.1.2 Transformations
 
 ##### 2d transformations
 
@@ -513,6 +517,84 @@ $$
 		- 我们可以找到两张图片中目前已知的对应点，记录它们的关系；然后求解它们的单应性矩阵 H，从而用单应性矩阵求解出变换后的所有未知的对应点
 
 ### 2.2 Geometric Image Formation
+
+- 将现实中的 3d 物体转化为 2d 图像的经典技术：投影
+	- 最早的摄影机：Pinhole Camera
+		- ![[Pasted image 20240709145153.png|700]]
+		- 在本次讲座中，我们认为数学化的相机模型，像位于焦点（Focal Point）前面，而非后面；此时像与物体的方向是一致的，并且只要距焦点的距离相同，像的大小和形状是相同的，唯一的区别只是它们之间是镜像的
+- Projection Models
+	- Orthographic Projection（正射投影）
+		- ![[Pasted image 20240709153657.png|400]]
+			- 光线之间都是平行的
+			- 能够非常完整的还原本来物体的形状和外观
+			- 在现实中实现非常困难，但是可以用长焦镜头近似实现
+	- Perspective Projection（透视投影）
+		- ![[Pasted image 20240709153707.png|400]]
+			- 类似之前提到的小孔成像模型
+			- 成像并非完整还原本来物体的形状和外观，会发生一定的变换
+			- 手机、摄像机等的实现
+	- ![[Pasted image 20240709154141.png|400]]
+> 可以理解为，现实中基本不存在理想的平行光源，物体的投影光线总是从一点出发的，该点即为焦点。随着与焦点的距离越远，像越大；因此在 z 轴方向上，随着 z 轴增大，xoy 面的投影面积也逐渐增大；自然投影的物体形状和外观会有所变化。在距离焦点越远的地方取像，则受到的影响越小
+
+- 考虑几何化的两种投影
+	- Orthographic Projection
+		- ![[Pasted image 20240709224725.png|700]]（注意 y 轴没有画出，实际上指向画面向内的方向）
+			- 3d 点 $x_{c}\in R^{3}$ 映射到像素坐标 $x_{s}\in R^{2}$
+			- 相机坐标系和像素坐标系的 x、y 轴是共享的
+			- 光线平行于相机坐标系的 z 轴
+			- 在投影过程中，z 坐标被丢弃，x、y 坐标保持不变
+		- $x_{s}=\begin{bmatrix}1\ 0\ 0\\0\ 1\ 0\end{bmatrix}x_{c}\Leftrightarrow \overline{x}_{s}=\begin{bmatrix}1\ 0\ 0\ 0\\0\ 1\ 0\ 0\\0\ 0\ 0\ 1\end{bmatrix}\overline{x}_{c}$
+			- 正射投影只是将 3 维坐标中的 z 分量去掉，从而在图像平面（屏幕）上得到相应的 2 维点
+			- 投影后，投影距离是无法恢复的
+	- Scaled Orthographic Projection
+		- $x_{s}=\begin{bmatrix}s\ 0\ 0\\0\ s\ 0\end{bmatrix}x_{c}\Leftrightarrow \overline{x}_{s}=\begin{bmatrix}s\ 0\ 0\ 0\\0\ s\ 0\ 0\\0\ 0\ 0\ 1\end{bmatrix}\overline{x}_{c}$
+			- 在实践中，世界真实坐标（可能以米为单位）必须缩放来适应图像传感器（以像素为单位）
+			- 缩放因子s 的单位为 $px/m$ 或 $px/mm$，用于将公制 3d 点转换为像素
+	- Perspective Projection
+		- ![[Pasted image 20240709231152.png|700]]（注意 y 轴没有画出，实际上指向画面向内的方向）
+			- 3d 点 $x_{c}\in R^{3}$ 映射到像素坐标 $x_{s}\in R^{2}$
+			- 光线穿过焦点、像素 $x_{s}$、点 $x_{c}$
+			- 约定：主轴与 z 轴对齐
+		- $\begin{pmatrix}x_{s}\\y_{s}\end{pmatrix}=\begin{pmatrix} \frac{fx_{c}}{z_{c}}\\ \frac{fy_{c}}{z_{c}} \end{pmatrix}\Leftrightarrow \tilde{x}_{s}=\begin{bmatrix}f\ 0\ 0\ 0\\0\ f\ 0\ 0\\0\ 0\ 1\ 0\end{bmatrix}\overline{x}_{c}$
+			- 在透视投影中，将相机坐标的分量乘焦距除以 z 分量，映射到图像平面上
+			- 注意，在使用齐次坐标时，这个投影是线性的；投影后，不可能从图像中恢复 3 维点的距离
+			- 焦距 $f$ 的单位是 px，从而将 3d 坐标单位转换为像素单位
+	- Perspective Projection（Principle Point Offset）
+		- ![[Pasted image 20240709232523.png|750]]
+			- 当我们以图像的中心点为原点建系时，图像的坐标可能出现负值，不便于计算
+			- 因此，我们将原本的所有坐标点加上一个中心点的偏移，也即将建系中心点移至图片的左上角
+		- $\begin{pmatrix}x_{s}\\y_{s}\end{pmatrix} = \begin{pmatrix} \frac{f_{x}x_{c}}{z_{c}} + \frac{sy_{c}}{z_{c}} + c_{x}\\ \frac{f_{y}y_{c}}{z_{c}} + c_{y} \end{pmatrix}\Leftrightarrow \tilde{x}_{s}=\begin{bmatrix}&f_{x}\ &s\ &c_{x}\ &0\\&0\ &f_{y}\ &c_{y}\ &0\\&0\ &0\ &1\ &0\end{bmatrix}\overline{x}_{c}$
+			- 这里 $3\times4$ 的投影矩阵左侧的 $3\times3$ 的矩阵称为校准矩阵（calibration matrix）K
+			- K 存储了所有相机的内在参数，对于相机而言也称为内在矩阵
+			- 这里，x 轴和 y 轴的焦距是独立的，允许不同的像素长宽比（不一定必须为 1:1）
+			- 由于相机中传感器没有安装在与光轴垂直的方向上，因此可能会产生一个误差倾斜：s
+			- 在实践中，我们通常令 $f_{x}=f_{y}$ 并且设置 $s=0$，但是模型 $c=(c_{x},c_{y})^{T}$
+
+- Chain Transformations
+	- 使用齐次坐标表示的好处之一是可以方便地做 3d 变换
+	- 如果世界坐标系与相机坐标系并不重合，那么我们可以通过变换（平移和旋转）来链式转换到相机坐标系
+	- 也即我们可以推导出从世界坐标系 -> 相机坐标系 -> 屏幕（也即相机外在矩阵和相机内在矩阵合并的推导式）
+	- ![[Pasted image 20240709233650.png|450]]
+		- 令 K 为校准矩阵，$\begin{bmatrix}R\ t\end{bmatrix}$ 为相机外在矩阵
+			- $\tilde{x}_{s}=\begin{bmatrix}K\ 0\end{bmatrix}\overline{x}_{c}=\begin{bmatrix}K\ 0\end{bmatrix}\begin{bmatrix}&R\ &t\\&o^{T}\ &1\end{bmatrix}\overline{x}_{w}=K\begin{bmatrix}R\ t\end{bmatrix}\overline{x}_{w}=P\overline{x}_{w}$
+		- 注意，$3\times4$ 的矩阵 P 可以被预先计算
+
+- Full Rank Representation
+	- 有些时候我们最好使用 $4\times4$ 的全秩矩阵
+		- $\tilde{x}_{s}=\begin{bmatrix}K & 0\\p^{T} & 1\end{bmatrix}\begin{bmatrix}R & t\\0^{T} & 1\end{bmatrix}\overline{x}_{w}=\tilde{P}\overline{x}_{w}$
+	- 现在，齐次向量 $\tilde{x}_{s}$ 就是一个 4d 向量，必须被标准化；其对应的 3d 非齐次坐标如下
+		- $\overline{x}_{s}=\frac{\tilde{x}_{s}}{z_{s}}=(\frac{x_{s}}{z_{s}},\frac{y_{s}}{z_{s}},1,\frac{1}{z_{s}})^{T}$
+	- 非齐次 4d 向量的第 4 个分量是逆深度，如果逆深度已知，由于 P 矩阵是一个满秩矩阵，则可以通过 $\tilde{x}_{w}=\tilde{P}^{-1}\overline{x}_{s}$ ，从屏幕上的坐标计算出对应的世界坐标
+
+- Lens Distortion
+	- 如果我们只使用一个针孔，那么我们在传感器上得到的光非常少，因此考虑使用镜头来收集更多的光
+	- 但是在实际应用中，相机镜头本身的特性会导致一些畸变，因此违背了直线投影（直线保持直线）的假设；
+	- 幸运的是，径向、切向畸变都可以相对容易的建模
+	- 设 $x=\frac{x_{c}}{z_{c}}$，$y=\frac{y_{c}}{z_{c}}$，$r^{2}=x^{2}+y^{2}$；则畸变点的计算如下：
+		- ![[Pasted image 20240710000333.png|500]]
+	- 通过畸变模型使得图像不失真，这样投影模型就适用了；
+	- 更复杂的畸变模型必须用于广角镜头（如鱼眼）
+		- ![[Pasted image 20240710000459.png|400]]
 
 ### 2.3 Photometric Image Formation
 
